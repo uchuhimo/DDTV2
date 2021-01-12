@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -125,8 +126,15 @@ namespace Auxiliary
             {
                 try
                 {
-                    Process process = new Process();                   
-                    process.StartInfo.FileName = "./libffmpeg/ffmpeg.exe";  
+                    Process process = new Process();
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        process.StartInfo.FileName = "./libffmpeg/ffmpeg.exe";
+                    }
+                    else
+                    {
+                        process.StartInfo.FileName = "ffmpeg";
+                    }
                     process.StartInfo.Arguments = "-i " + Filename + " -vcodec copy -acodec copy " + Filename.Replace(".flv", "") + ".mp4";
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.CreateNoWindow = true;
@@ -137,7 +145,15 @@ namespace Auxiliary
                     DateTime beginTime = DateTime.Now;
                     process.Start();
                     process.BeginErrorReadLine();   // 开始异步读取
-                    process.Exited += Process_Exited;
+                    process.Exited += (object sender, EventArgs e) =>
+                    {
+                        Process P = (Process)sender;
+                        InfoLog.InfoPrintf("转码任务完成:" + P.StartInfo.Arguments, InfoLog.InfoClass.下载必要提示);
+                        if (MMPU.转码后删除源文件使能)
+                        {
+                            File.Delete(Filename);
+                        }
+                    };
                     GC.Collect();
                 }
                 catch (Exception)
@@ -149,12 +165,6 @@ namespace Auxiliary
                 GC.Collect();
             }
            
-        }
-
-        private static void Process_Exited(object sender, EventArgs e)
-        {
-            Process P = (Process)sender;
-            InfoLog.InfoPrintf("转码任务完成:"+P.StartInfo.Arguments, InfoLog.InfoClass.下载必要提示);
         }
 
         private static void Output(object sender, DataReceivedEventArgs e)
