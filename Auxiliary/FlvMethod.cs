@@ -141,10 +141,8 @@ namespace Auxiliary
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.RedirectStandardInput = true;
                     process.StartInfo.RedirectStandardError = true;
+                    process.EnableRaisingEvents = true;
                     process.ErrorDataReceived += new DataReceivedEventHandler(Output);  // 捕捉ffmpeg.exe的信息
-                    DateTime beginTime = DateTime.Now;
-                    process.Start();
-                    process.BeginErrorReadLine();   // 开始异步读取
                     process.Exited += (object sender, EventArgs e) =>
                     {
                         Process P = (Process)sender;
@@ -154,6 +152,8 @@ namespace Auxiliary
                             File.Delete(Filename);
                         }
                     };
+                    process.Start();
+                    process.BeginErrorReadLine();   // 开始异步读取
                     GC.Collect();
                 }
                 catch (Exception)
