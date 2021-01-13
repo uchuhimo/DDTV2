@@ -501,6 +501,7 @@ namespace Auxiliary
                             if (!string.IsNullOrEmpty(DownIofo.继承.合并后的文件路径))
                             {
                                 DownIofo.文件保存路径 = DownIofo.继承.合并后的文件路径;
+                                FlvMethod.转码(DownIofo.继承.合并后的文件路径);
                             }
                         }
                         else if (!DownIofo.是否是播放任务)
@@ -585,6 +586,7 @@ namespace Auxiliary
                                                     if (!string.IsNullOrEmpty(DownIofo.继承.合并后的文件路径))
                                                     {
                                                         DownIofo.文件保存路径 = DownIofo.继承.合并后的文件路径;
+                                                        FlvMethod.转码(DownIofo.继承.合并后的文件路径);
                                                     }
                                                 }
                                                 else if (!DownIofo.是否是播放任务)
