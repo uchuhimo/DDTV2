@@ -92,10 +92,7 @@ namespace Auxiliary
                     fs2.Dispose();
                     fsMerge.Close();
                     fsMerge.Dispose();
-                    else
-                    {
-                        GC.Collect();
-                    }
+                    GC.Collect();
                     return output;
                 }
                 else
