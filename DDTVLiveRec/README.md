@@ -10,6 +10,7 @@
 * 支持linux，可以挂在路由器或树莓派等linux嵌入式设备上运行
 * 开播自动录制
 * 录制完成后自动合并文件
+* 录制完成后自动转码为MP4并修复直播流flv时间轴错误的问题 (在Linux/MacOS上需要自行安装ffmpeg)
 * 多路异步下载
 * 在网页直接查看运行状态\日志\下载文件列表
 * 登陆买票后可以录制付费直播内容
@@ -44,7 +45,27 @@ web服务端:
 [http://IP:11419/config]：DDTVLiveRec的配置修改命令列表  
 [http://IP:11419/systeminfo]：DDTVLiveRec的系统总览页面
 
+### 如果使用Docker构建:
 
+1. 构建Docker镜像：
+
+```bash
+docker build -f DDTVLiveRec/Dockerfile -t ddtv:latest .
+```
+
+2. 运行Docker：
+
+```bash
+docker run -d \
+    --restart always \
+    -p 11419:11419 \
+    -v ${CONFIG_DIR}/BiliUser.ini:/DDTVLiveRec/BiliUser.ini \
+    -v ${CONFIG_DIR}/DDTVLiveRec.dll.config:/DDTVLiveRec/DDTVLiveRec.dll.config \
+    -v ${CONFIG_DIR}/RoomListConfig.json:/DDTVLiveRec/RoomListConfig.json \
+    -v ${DOWNLOAD_DIR}:/DDTVLiveRec/tmp \
+    --name ddtv \
+    ddtv:latest
+```
 
 # 录制配置：RoomListConfig.json说明：
 　　格式和解析方式和DDTV一样，格式为json字符串，releases发布的压缩包里附带了一个参考的文件。  
