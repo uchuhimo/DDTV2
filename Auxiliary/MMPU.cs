@@ -206,7 +206,7 @@ namespace Auxiliary
             MMPU.转码功能使能 = MMPU.读取exe默认配置文件("AutoTranscoding", "0") == "1" ? true : false;
             InfoLog.InfoPrintf($"配置文件初始化任务[转码功能使能]:{转码功能使能}", InfoLog.InfoClass.Debug);
             //转码后删除源文件使能
-            MMPU.转码后删除源文件使能 = MMPU.读取exe默认配置文件("AutoTranscoding", "0") == "1" ? true : false;
+            MMPU.转码后删除源文件使能 = MMPU.读取exe默认配置文件("RemoveFlvAfterTranscoding", "0") == "1" ? true : false;
             InfoLog.InfoPrintf($"配置文件初始化任务[转码后删除源文件使能]:{转码后删除源文件使能}", InfoLog.InfoClass.Debug);
             //检查配置文件
             bilibili.BiliUser.CheckPath(MMPU.BiliUserFile);
