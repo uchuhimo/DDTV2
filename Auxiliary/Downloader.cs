@@ -489,36 +489,7 @@ namespace Auxiliary
                     else if (!e.Cancelled&& !bilibili.根据房间号获取房间信息.是否正在直播(DownIofo.房间_频道号,true))
                     {
                         DownIofo.继承.待合并文件列表.Add(DownIofo.文件保存路径);
-                        DownIofo.下载状态 = false;
-                        DownIofo.备注 = "下载完成,直播间已关闭";             
-                        if (DownIofo.继承 == null)
-                        {
-                            DownIofo.继承.是否为继承对象 = false;
-                        }
-                        if (DownIofo.继承.是否为继承对象 && !DownIofo.是否是播放任务)
-                        {
-                            DownIofo.继承.合并后的文件路径 = 下载完成合并FLV(DownIofo, true);
-                            if (!string.IsNullOrEmpty(DownIofo.继承.合并后的文件路径))
-                            {
-                                DownIofo.文件保存路径 = DownIofo.继承.合并后的文件路径;
-                                FlvMethod.转码(DownIofo.继承.合并后的文件路径);
-                            }
-                        }
-                        else if (!DownIofo.是否是播放任务)
-                        {
-                            FlvMethod.转码(DownIofo.文件保存路径);
-                        }
-                        InfoLog.InfoPrintf(DownIofo.房间_频道号 + "房间:" + DownIofo.主播名称 + " 下播，录制完成", InfoLog.InfoClass.下载必要提示);
-                        foreach (var item in RoomInit.bilibili房间主表)
-                        {
-                            if (item.唯一码 == DownIofo.房间_频道号)
-                            {
-                                item.直播状态 = false;
-                                break;
-                            }
-                        }
-                        DownIofo.下载状态 = false;
-                        下载结束提醒(true, "下载任务结束", DownIofo);
+                        合并与转码(DownIofo);
                         return;
                     }
                     else
@@ -571,29 +542,7 @@ namespace Auxiliary
                                                 重连下载对象.DownIofo.下载状态 = false;
                                                 重连下载对象.DownIofo.结束时间 = Convert.ToInt32((DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalSeconds);
                                                 重连下载对象.DownIofo.备注 = "服务器主动断开连接，直播结束";
-                                                foreach (var item in RoomInit.bilibili房间主表)
-                                                {
-                                                    if (item.唯一码 == DownIofo.房间_频道号)
-                                                    {
-                                                        item.直播状态 = false;
-                                                        break;
-                                                    }
-                                                }
-                                                if (DownIofo.继承.是否为继承对象 && !DownIofo.是否是播放任务)
-                                                {
-                                                    DownIofo.继承.合并后的文件路径 = 下载完成合并FLV(DownIofo, true);
-                                                    if (!string.IsNullOrEmpty(DownIofo.继承.合并后的文件路径))
-                                                    {
-                                                        DownIofo.文件保存路径 = DownIofo.继承.合并后的文件路径;
-                                                        FlvMethod.转码(DownIofo.继承.合并后的文件路径);
-                                                    }
-                                                }
-                                                else if (!DownIofo.是否是播放任务)
-                                                {
-                                                    FlvMethod.转码(DownIofo.文件保存路径);
-                                                }
-                                                重连下载对象.DownIofo.下载状态 = false;
-                                                重连下载对象.DownIofo.结束时间 = Convert.ToInt32((DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalSeconds);
+                                                合并与转码(DownIofo);
                                                 下载结束提醒(true, "下载任务结束", 重连下载对象.DownIofo);
                                             }
                                             catch (Exception){}
@@ -634,9 +583,8 @@ namespace Auxiliary
                         }
                         else
                         {
-                            DownIofo.备注 = "直播停止，下载完成下载完成";
-                            下载结束提醒(true, "下载任务结束", DownIofo);
-                            DownIofo.下载状态 = false;
+                            DownIofo.继承.待合并文件列表.Add(DownIofo.文件保存路径);
+                            合并与转码(DownIofo);
                             return;
                         }
                     }
@@ -722,6 +670,39 @@ namespace Auxiliary
                                $"\r\n结束原因:{DOL.备注}" +
                                $"\r\n==============={提醒标题}===============\r\n", InfoLog.InfoClass.下载必要提示);
         }
+
+        public void 合并与转码(DownIofoData downIofo)
+        {
+            downIofo.备注 = "下载完成,直播间已关闭";
+            if (downIofo.继承 == null)
+            {
+                downIofo.继承.是否为继承对象 = false;
+            }
+            if (downIofo.继承.是否为继承对象 && !downIofo.是否是播放任务)
+            {
+                downIofo.继承.合并后的文件路径 = 下载完成合并FLV(downIofo, true);
+                if (!string.IsNullOrEmpty(downIofo.继承.合并后的文件路径))
+                {
+                    downIofo.文件保存路径 = downIofo.继承.合并后的文件路径;
+                    FlvMethod.转码(downIofo.继承.合并后的文件路径);
+                }
+            }
+            else if (!downIofo.是否是播放任务)
+            {
+                FlvMethod.转码(downIofo.文件保存路径);
+            }
+            InfoLog.InfoPrintf(downIofo.房间_频道号 + "房间:" + downIofo.主播名称 + " 下播，录制完成", InfoLog.InfoClass.下载必要提示);
+            foreach (var item in RoomInit.bilibili房间主表)
+            {
+                if (item.唯一码 == downIofo.房间_频道号)
+                {
+                    item.直播状态 = false;
+                    break;
+                }
+            }
+            下载结束提醒(true, "下载任务结束", downIofo);
+        }
+
         public static string 下载完成合并FLV(DownIofoData downIofo, bool 是否直播结束)
         {
             string filename = string.Empty;
