@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.WebSockets;
@@ -62,22 +63,32 @@ namespace Auxiliary.LiveChatScript
             JObject JO = (JObject)JsonConvert.DeserializeObject(BB);
             try
             {
+                var sortedHosts = new SortedDictionary<int, string>();
                 foreach (var item in JO["data"]["host_list"])
                 {
-                    if (!bilibili.已经使用的服务器组.Contains(item["host"].ToString()))
+                    var host = item["host"].ToString();
+                    if (!bilibili.已经使用的服务器组.ContainsKey(host))
                     {
-                        wss_S = item["host"].ToString();
-                        bilibili.已经使用的服务器组.Add(wss_S);
+                        bilibili.已经使用的服务器组[host] = 1;
+                        wss_S = host;
                         break;
+                    }
+                    else
+                    {
+                        var count = bilibili.已经使用的服务器组[host];
+                        if (!sortedHosts.ContainsKey(count)) {
+                            sortedHosts[count] = host;
+                        }
                     }
                 }
                 if (string.IsNullOrEmpty(wss_S))
                 {
-                    wss_S = JO["data"]["host_list"][1]["host"].ToString();
-                    bilibili.已经使用的服务器组.Add(wss_S);
+                    wss_S = sortedHosts.First().Value;
+                    bilibili.已经使用的服务器组[wss_S] += 1;
                 }
                 await m_client.ConnectAsync(new Uri("wss://" + wss_S + "/sub"), cancellationToken ?? new CancellationTokenSource(30000).Token);
-                
+                InfoLog.InfoPrintf($@"使用WSS连接host: {wss_S}, 已连接数: {bilibili.已经使用的服务器组[wss_S]}", InfoLog.InfoClass.杂项提示);
+
                 //await m_client.ConnectAsync(new Uri("wss://broadcastlv.chat.bilibili.com/sub"), cancellationToken ?? new CancellationTokenSource(300000).Token);
             }
             catch (Exception e)
@@ -133,7 +144,15 @@ namespace Auxiliary.LiveChatScript
 
             try
             {
-                bilibili.已经使用的服务器组.Remove(wss_S);
+                var count = bilibili.已经使用的服务器组[wss_S];
+                if (count == 1)
+                {
+                    bilibili.已经使用的服务器组.Remove(wss_S);
+                }
+                else
+                {
+                    bilibili.已经使用的服务器组[wss_S] -= 1;
+                }
             }
             catch (Exception)
             { }
