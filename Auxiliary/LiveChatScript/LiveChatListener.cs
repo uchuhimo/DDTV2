@@ -58,6 +58,11 @@ namespace Auxiliary.LiveChatScript
                 throw new ObjectDisposedException("");
             }
             m_client = new ClientWebSocket();
+            var proxy = MMPU.读取exe默认配置文件("DanmuProxy", "");
+            if (!string.IsNullOrEmpty(proxy))
+            {
+                m_client.Options.Proxy = new WebProxy(proxy);
+            }
             m_innerRts = new CancellationTokenSource();
             string BB = MMPU.返回网页内容_GET("https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=" + roomId, 20000);
             JObject JO = (JObject)JsonConvert.DeserializeObject(BB);
