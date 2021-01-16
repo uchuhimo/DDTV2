@@ -98,9 +98,12 @@ namespace DDTVLiveRecWebServer
                             A = A + "<br/>" + NextFolder1.Name;
                             foreach (FileInfo NextFolder2 in new DirectoryInfo(Auxiliary.MMPU.缓存路径 + NextFolder1.Name).GetFiles())
                             {
-                                string FileUrl = Auxiliary.MMPU.缓存路径 + NextFolder1.Name.Replace("+", "ddtvfuhaojia").Replace(" ", "ddtvfuhaokongge").Replace("/", "ddtvfuhaoxiegang").Replace("?", "ddtvfuhaowenhao").Replace("%", "ddtvfuhaobaifenhao").Replace("#", "ddtvfuhaojinhao").Replace("&", "ddtvfuhaoand").Replace("%", "ddtvfuhaobaifenhao") + "/" + NextFolder2.Name.Replace("+", "ddtvfuhaojia").Replace(" ", "ddtvfuhaokongge").Replace("/", "ddtvfuhaoxiegang").Replace("?", "ddtvfuhaowenhao").Replace("%", "ddtvfuhaobaifenhao").Replace("#", "ddtvfuhaojinhao").Replace("&", "ddtvfuhaoand").Replace("%", "ddtvfuhaobaifenhao");
-                                FileUrl = FileUrl;
-                                A = A + "<br/>&nbsp;&nbsp;" + Math.Ceiling(NextFolder2.Length / 1024.0 / 1024.0) + " MB |" + "<a href=\"./play?FileUrl=" + FileUrl + "&Title=" + NextFolder2.Name + "\" target=\"_blank\">" + NextFolder2.Name + "</a>";
+                                if (NextFolder2.Name.EndsWith(".flv") || NextFolder2.Name.EndsWith(".mp4"))
+                                {
+                                    string FileUrl = Auxiliary.MMPU.缓存路径 + NextFolder1.Name.Replace("+", "ddtvfuhaojia").Replace(" ", "ddtvfuhaokongge").Replace("/", "ddtvfuhaoxiegang").Replace("?", "ddtvfuhaowenhao").Replace("%", "ddtvfuhaobaifenhao").Replace("#", "ddtvfuhaojinhao").Replace("&", "ddtvfuhaoand").Replace("%", "ddtvfuhaobaifenhao") + "/" + NextFolder2.Name.Replace("+", "ddtvfuhaojia").Replace(" ", "ddtvfuhaokongge").Replace("/", "ddtvfuhaoxiegang").Replace("?", "ddtvfuhaowenhao").Replace("%", "ddtvfuhaobaifenhao").Replace("#", "ddtvfuhaojinhao").Replace("&", "ddtvfuhaoand").Replace("%", "ddtvfuhaobaifenhao");
+                                    FileUrl = FileUrl;
+                                    A = A + "<br/>&nbsp;&nbsp;" + Math.Ceiling(NextFolder2.Length / 1024.0 / 1024.0) + " MB |" + "<a href=\"./play?FileUrl=" + FileUrl + "&Title=" + NextFolder2.Name + "\" target=\"_blank\">" + NextFolder2.Name + "</a>";
+                                }
                             }
                             A = A + "<br/>";
                         }
