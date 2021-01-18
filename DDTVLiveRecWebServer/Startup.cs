@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
@@ -19,6 +20,10 @@ namespace DDTVLiveRecWebServer
     {
         public static string 返回标签内容 = "<a href=\"./systeminfo\"><input type=\"button\" value='返回概况页'></a><br/><br/>";
         public static string 验证KEY预设 = "DDTVLiveRec";
+        public static string MDtoHTML(string MD)
+        {
+            return CommonMark.CommonMarkConverter.Convert(MD);
+        }
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
@@ -44,7 +49,7 @@ namespace DDTVLiveRecWebServer
             app.UseCors();
             app.UseFileServer(new FileServerOptions()//直接开启文件目录访问和文件访问
             {
-                EnableDirectoryBrowsing = false,//开启目录访问
+                EnableDirectoryBrowsing = false,//权限目录访问
                 FileProvider = new PhysicalFileProvider(Environment.CurrentDirectory + @"/tmp"),
                 RequestPath = new PathString("/tmp")
             });
@@ -58,8 +63,17 @@ namespace DDTVLiveRecWebServer
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapGet("/test", async context =>
+                {
+
+                    context.Response.ContentType = "text/html; charset=utf-8";
+                    await context.Response.WriteAsync(MDtoHTML("* 就是一个测试页，你看咩啊？"), System.Text.Encoding.UTF8);
+
+                });
                 endpoints.MapGet("/log", async context =>
                 {
+                    //str:markdown文本
+
                     if (ACCAsync(context, 验证KEY预设) >= 2)
                     {
                         context.Response.ContentType = "text/html; charset=utf-8";
@@ -146,6 +160,12 @@ namespace DDTVLiveRecWebServer
                 });
                 endpoints.MapGet("/login", async context =>
                 {
+                    context.Response.ContentType = "text/html; charset=utf-8";
+                    string html = Properties.Resources.loginHtml;
+                    await context.Response.WriteAsync(MDtoHTML(html), System.Text.Encoding.UTF8);
+                });
+                endpoints.MapGet("/loginACC", async context =>
+                {
                     string ACC = context.Request.Query["ACC"];
                     string KEY = "";
                     int 登陆类型 = 0;
@@ -188,8 +208,8 @@ namespace DDTVLiveRecWebServer
                 endpoints.MapGet("/LoginErrer", async context =>
                 {
                     context.Response.ContentType = "text/html; charset=utf-8";
-                    string OUTTEST = "<br/><br/><br/>使用WEB端需要验证，验证请访问:<br/>http://IP:" + Auxiliary.MMPU.webServer默认监听端口+ "/login?ACC=这里填写验证码<br/><br/><br/>注:验证码是DDTVLiveRec.dll.config文件里的[WebAuthenticationGhostPasswrod]和[WebAuthenticationAadminPassword]的value<br/><br/>[WebAuthenticationGhostPasswrod]为游客验证，只能查看/file界面和进行播放预览<br/>[WebAuthenticationAadminPassword]是全功能管理员验证<br/><br/>两个值都能自行修改，修改后请重启DDTVLiveRec";
-                    await context.Response.WriteAsync("<H1>权限验证失败!!!</H1><br/><br/>" + OUTTEST, System.Text.Encoding.UTF8);
+                    string OUTTEST = "<br/>使用WEB端需要验证，验证请访问:<br/><a href=\"./login\"><input type=\"button\" value='鉴权登陆页'></a>";
+                    await context.Response.WriteAsync("<H1>权限验证失败!!!</H1>" + OUTTEST, System.Text.Encoding.UTF8);
                 });
                 endpoints.MapGet("/list", async context =>
                 {
