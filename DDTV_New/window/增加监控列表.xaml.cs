@@ -43,16 +43,15 @@ namespace DDTV_New.window
                 try
                 {
                     roomId = int.Parse(唯一码.Text);
-                    if (roomId < 10001)
-                    { 
-                        string roomDD = bilibili.根据房间号获取房间信息.获取真实房间号(roomId.ToString());
-                        if(!string.IsNullOrEmpty(roomDD))
-                        {
-                            roomId = int.Parse(roomDD);
-                        }
+
+                    string roomDD = bilibili.根据房间号获取房间信息.获取真实房间号(roomId.ToString());
+                    if (!string.IsNullOrEmpty(roomDD))
+                    {
+                        roomId = int.Parse(roomDD);
                     }
                 }
-                catch (Exception){
+                catch (Exception)
+                {
 
                     MessageBox.Show("输入的直播间房间号不符合房间号规则(数字)");
                     return;
@@ -83,12 +82,19 @@ namespace DDTV_New.window
                     }
                     catch (Exception){}
                 }
-                
+                if(UID<1)
+                {
+                    try
+                    {
+                        UID = long.Parse(bilibili.根据房间号获取房间信息.通过房间号获取UID(roomId.ToString()));
+                    }
+                    catch (Exception){}
+                }
                
-                RB.data.Add(new RoomCadr() { Name = 名称.Text + "-NV", OfficialName = 名称.Text + "-NV", RoomNumber = roomId.ToString(),UID= UID });
+                RB.data.Add(new RoomCadr() { Name = 名称.Text , OfficialName = 名称.Text , RoomNumber = roomId.ToString(),UID= UID });
                 string JOO = JsonConvert.SerializeObject(RB);
                 MMPU.储存文本(JOO, RoomConfigFile);
-                提示.Content = 名称.Text + "-NV["+ 唯一码.Text + "]添加完成";
+                提示.Content = 名称.Text + "["+ 唯一码.Text + "]添加完成";
                 bilibili.已连接的直播间状态.Add(new 直播间状态() { 房间号= roomId });
                 
                 bilibili.RoomList.Add(new RoomInfo
@@ -99,9 +105,9 @@ namespace DDTV_New.window
                     是否录制视频 = false,
                     UID = UID.ToString(),
                     直播开始时间 = "",
-                    名称 = 名称.Text + "-NV",
+                    名称 = 名称.Text ,
                     直播状态 = false,
-                    原名 = 名称.Text + "-NV",
+                    原名 = 名称.Text ,
                     是否提醒 = false,
                     平台 = "bilibili"
                 });

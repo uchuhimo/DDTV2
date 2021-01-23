@@ -18,6 +18,7 @@ using Newtonsoft.Json.Linq;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using static Auxiliary.bilibili;
+using System.Drawing;
 
 namespace Auxiliary
 { 
@@ -26,17 +27,7 @@ namespace Auxiliary
         public static bool 开发模式 = 读取exe默认配置文件("DevelopmentModel", "0") == "1" ? true : false;
         public static string[] 开发更改 = new string[] 
         { 
-            "增加新的房间监控代码和逻辑，所有房间均可监控，不限制数量了",
-            "增加了在DDTVLiveRec文件列表查看页可以直接播放对应视频的功能",
-            "增加了web服务的鉴权功能",
-            "增加了web服务的登陆页面(血压升高版UI)",
-            "增加检测到新版本后，在WEB的systeminfo界面显示显示新版本更新提示和更新公告内容",
-            "增加一种阿B原生API房间直播状态轮询机制；" ,     
-            "增加轮播状态的识别防止误判；" ,
-            "增加混合模式API获取机制和对应的欢迎界面；",
-            "房间配置文件增加对于UID的配置缓存；" ,
-            "优化缓存系统的格式和统一缓存头标识；" ,
-            "缩短直播状态的状态机轮询默认时间；" ,
+            "当前没有更新内容"
         };
         public static 弹窗提示 弹窗 = new 弹窗提示();
         public static List<Downloader> DownList = new List<Downloader>();
@@ -45,9 +36,9 @@ namespace Auxiliary
         public static string 直播缓存目录 = "";
         public static int 直播更新时间 = 20;
         public static string 下载储存目录 = "";
-        public static string 版本号 = "2.0.5.0a";
+        public static string 版本号 = "2.0.5.0d";
         public static string 开发版本号 = $"开发模式(基于Ver{版本号}主分支)";     
-        public static string[] 不检测的版本号 = { "2.0.4.8.2021.b" };
+        public static string[] 不检测的版本号 = { };
         public static bool 第一次打开播放窗口 = true;
         public static int 默认音量 = 0;
         public static int 缩小功能 = 1;
@@ -102,6 +93,8 @@ namespace Auxiliary
 
         public static int 启动模式 = 0;//0：DDTV,1：DDTVLive,2：DDTV服务器
         public static bool 网络环境变动监听 = false;
+
+        public static List<string> DeleteFileList = new List<string>();
 
         /// <summary>
         /// 配置文件初始化
@@ -192,6 +185,7 @@ namespace Auxiliary
                 InfoLog.InfoPrintf($"配置文件初始化任务[是否第一次使用DDTV]:{是否第一次使用DDTV}", InfoLog.InfoClass.Debug);
                 MMPU.开机自启动 = MMPU.读取exe默认配置文件("BootUp", "0") == "0" ? false : true;
                 InfoLog.InfoPrintf($"配置文件初始化任务[开机自启动]:{开机自启动}", InfoLog.InfoClass.Debug);
+                清空播放缓存();
             }
             else if (模式 == 1)
             {
@@ -270,8 +264,48 @@ namespace Auxiliary
                 InfoLog.InfoPrintf($"房间配置文件加载过程中发生错误，文件格式不符合要求，请检查文件内容。错误堆栈:\n{e.ToString()}", InfoLog.InfoClass.系统错误信息);
             }
             DokiDoki(模式);
+            文件删除后台委托();
             Downloader.轮询检查下载任务();
             return true;
+        }
+        public static void 文件删除后台委托()
+        {
+            new Thread(new ThreadStart(delegate
+            {
+                while (true)
+                {
+                    try
+                    {
+                       DEL: if(DeleteFileList.Count>0)
+                        {
+                            foreach (var item in DeleteFileList)
+                            {
+                                if (File.Exists(item))
+                                {
+                                    if (!文件是否正在被使用(item))
+                                    {
+                                        try
+                                        {
+                                            File.Delete(item);
+                                            InfoLog.InfoPrintf($"后台文件处理池{item}删除委托完成", InfoLog.InfoClass.Debug);
+                                            DeleteFileList.Remove(item);
+                                            goto DEL;
+                                        }
+                                        catch (Exception) { }  
+                                    }
+                                }
+                                else
+                                {
+                                    DeleteFileList.Remove(item);
+                                    goto DEL;
+                                } 
+                            }
+                        }
+                    }
+                    catch (Exception) { }
+                    Thread.Sleep(5000);
+                }
+            })).Start();
         }
         /// <summary>
         /// 心跳和检测网络环境变动
@@ -311,7 +345,7 @@ namespace Auxiliary
                         {
                             if (LIP != NIP&& IsCorrectIP(LIP)&& IsCorrectIP(NIP))
                             {
-                                InfoLog.InfoPrintf($"■■■■■■■■■■■■■■■■■■■■■■■■■■■ERROR!错误警告！■■■■■■■■■■■■■■■■■■■■■■■■■■■\n检测到系统网络中断，多个DDTV录制中的线程抛出无法处理的异常\n这个错误是由于网络环境变化引起的，不是由DDTV引起的，一般是由于光猫、路由器重启或者电信重新拨号引起的，DDTV无法处理该异常\n网络中断若干时间且外网地址由\n{LIP}变化为{NIP}，网络错误前的任务将冻结任务建立新的续命任务，恢复后新建立的任务正常录制\n■■■■■■■■■■■■■■■■■■■■■■■■■■■ERROR!错误警告！■■■■■■■■■■■■■■■■■■■■■■■■■■■", InfoLog.InfoClass.系统错误信息);
+                                InfoLog.InfoPrintf($"■■■■■■■■■■■■■■■■■■■■■■■■■■■ERROR!错误警告！■■■■■■■■■■■■■■■■■■■■■■■■■■■\n检测到系统网络中断，多个DDTV录制中的线程抛出无法处理的异常\n这个错误是由于网络环境变化引起的，不是由DDTV引起的，一般是由于光猫、路由器重启或者宽带重新拨号引起的，DDTV无法处理该异常\n网络中断若干时间且外网地址由\n{LIP}变化为{NIP}，网络错误前的任务将冻结任务建立新的续命任务，恢复后新建立的任务正常录制\n■■■■■■■■■■■■■■■■■■■■■■■■■■■ERROR!错误警告！■■■■■■■■■■■■■■■■■■■■■■■■■■■", InfoLog.InfoClass.系统错误信息);
                                 try
                                 {
                                     foreach (var item in Auxiliary.MMPU.DownList)
@@ -824,13 +858,23 @@ namespace Auxiliary
                                     try
                                     {
                                         InfoLog.InfoPrintf("网络房间缓存vtbs加载失败", InfoLog.InfoClass.Debug);
-                                        roomHtml = 返回网页内容_GET("https://raw.githubusercontent.com/CHKZL/DDTV2/master/Auxiliary/DDcenter/vtbsroomlist.json", 12000);
+                                        roomHtml = 返回网页内容_GET("https://raw.githubusercontent.com/CHKZL/DDTV2/master/Auxiliary/DDcenter/VtbsList.json", 12000);
                                         InfoLog.InfoPrintf("网络房间缓存github加载完成", InfoLog.InfoClass.Debug);
                                     }
                                     catch (Exception)
-                                    {
-                                        InfoLog.InfoPrintf("网络房间缓存github加载失败", InfoLog.InfoClass.Debug);
-                                        roomHtml = File.ReadAllText("VtbsList.json");
+                                    {            
+                                        try
+                                        {
+                                            InfoLog.InfoPrintf("网络房间缓存github加载失败", InfoLog.InfoClass.Debug);
+                                            roomHtml = TcpSend(Server.RequestCode.GET_VTBSROOMLIST, "{}", true, 1500);
+                                            InfoLog.InfoPrintf("DDTV服务器加载房间缓存成功", InfoLog.InfoClass.Debug);
+                                        }
+                                        catch (Exception)
+                                        {
+                                            InfoLog.InfoPrintf("DDTV服务器加载房间缓存失败", InfoLog.InfoClass.Debug);
+                                            roomHtml = File.ReadAllText("VtbsList.json");
+                                            InfoLog.InfoPrintf("本地文件缓存加载房间缓存成功", InfoLog.InfoClass.Debug);
+                                        }
                                     }
                                 }
                                 JArray result = JArray.Parse(roomHtml);
@@ -838,23 +882,29 @@ namespace Auxiliary
                                 列表缓存2.Clear();
                                 foreach (var item in result)
                                 {
-                                    if(int.Parse(item["roomid"].ToString())!=0)
+                                    try
                                     {
-                                        列表缓存2.Add(new 列表加载缓存
+                                        if (int.Parse(item["roomid"].ToString()) != 0)
                                         {
-                                            编号 = A,
-                                            roomId = item["roomid"].ToString(),
-                                            名称 = item["uname"].ToString(),
-                                            官方名称 = item["uname"].ToString(),
-                                            平台 = "bilibili",
-                                            UID = item["mid"].ToString(),
-                                            类型 = "V"
-                                        }) ;
-                                        A++;
+                                            列表缓存2.Add(new 列表加载缓存
+                                            {
+                                                编号 = A,
+                                                roomId = item["roomid"].ToString(),
+                                                名称 = item["uname"].ToString(),
+                                                官方名称 = item["uname"].ToString(),
+                                                平台 = "bilibili",
+                                                UID = item["mid"].ToString(),
+                                                类型 = "V"
+                                            });
+                                            A++;
+                                        }
+                                        else
+                                        {
+                                            ;
+                                        }
                                     }
-                                    else
+                                    catch (Exception)
                                     {
-                                        ;
                                     }
                                 }
                                 列表缓存1 = 列表缓存2;
@@ -902,7 +952,7 @@ namespace Auxiliary
                                 //    }
                                 //}
                             }
-                            catch (Exception)
+                            catch (Exception E)
                             {
                                 是否正在缓存 = false;
                             }
@@ -950,10 +1000,11 @@ namespace Auxiliary
         {
             try
             {
-                WebClient wcl = new WebClient();
+                NewWebClient myWebClient = new NewWebClient(1 * 1000);
+                //wcl.Timeout = 1000;
                 Stopwatch spwatch = new Stopwatch();
                 spwatch.Start();
-                byte[] resultBytes = wcl.DownloadData(new Uri(Url));
+                byte[] resultBytes = myWebClient.DownloadData(new Uri(Url));
                 spwatch.Stop();
                 return spwatch.Elapsed.TotalMilliseconds;
             }
@@ -961,6 +1012,42 @@ namespace Auxiliary
             {
 
                 return -1;
+            }
+        }
+        public class NewWebClient : WebClient
+        {
+            private int _timeout;
+
+            /// <summary>
+            /// 超时时间(毫秒)
+            /// </summary>
+            public int Timeout
+            {
+                get
+                {
+                    return _timeout;
+                }
+                set
+                {
+                    _timeout = value;
+                }
+            }
+
+            public NewWebClient()
+            {
+                this._timeout = 60000;
+            }
+
+            public NewWebClient(int timeout)
+            {
+                this._timeout = timeout;
+            }
+
+            protected override WebRequest GetWebRequest(Uri address)
+            {
+                var result = base.GetWebRequest(address);
+                result.Timeout = this._timeout;
+                return result;
             }
         }
         public class 弹窗提示
@@ -1076,27 +1163,39 @@ namespace Auxiliary
                 SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, -1, -1);
             }
         }
-        public static void 文件删除委托(string file, string 任务来源)
+        public static void 清空播放缓存()
         {
-            new Task((() => 
-            {
-                int i = 0;
+            new Thread(new ThreadStart(delegate {
                 try
                 {
-                    while (true)
+                    if (Directory.Exists("./tmp/LiveCache/"))
                     {
-                        if (i > 10)
+                        FileInfo[] files = new DirectoryInfo("./tmp/LiveCache/").GetFiles();
+                        foreach (var item in files)
                         {
-                            return;
+                            MMPU.文件删除委托("./tmp/LiveCache/" + item.Name, "启动/关闭DDTV清空LiveCache缓存文件");
                         }
-                        if (!文件是否正在被使用(file))
-                        {
-                            InfoLog.InfoPrintf($"收到文件删除委托任务，来自:{任务来源}，删除文件:{file}", InfoLog.InfoClass.下载必要提示);
-                            File.Delete(file);
-                            return;
-                        }
-                        i++;
-                        Thread.Sleep(500);
+                    }
+                }
+                catch (Exception) { }
+            })).Start();
+        }
+        public static void 文件删除委托(string file, string 任务来源)
+        {
+            new Task((() =>
+            {
+                try
+                {
+                    if (!文件是否正在被使用(file))
+                    {
+                        InfoLog.InfoPrintf($"收到文件删除委托任务，来自:{任务来源}，删除文件:{file}", InfoLog.InfoClass.Debug);
+                        File.Delete(file);
+                        return;
+                    }
+                    else
+                    {
+                        InfoLog.InfoPrintf($"来自:{任务来源}的文件:{file}删除委托失败，文件还在使用中，已将删除任务委托给后台文件处理池", InfoLog.InfoClass.Debug);
+                        DeleteFileList.Add(file);
                     }
                 }
                 catch (Exception)
@@ -1107,31 +1206,27 @@ namespace Auxiliary
 
         }
 
-        [DllImport("kernel32.dll")]
-        public static extern IntPtr _lopen(string lpPathName, int iReadWrite);
-        [DllImport("kernel32.dll")]
-        public static extern bool CloseHandle(IntPtr hObject);
-        public const int OF_READWRITE = 2;
-        public const int OF_SHARE_DENY_NONE = 0x40;
-        public static readonly IntPtr HFILE_ERROR = new IntPtr(-1);
+
         /// <summary>
         /// 文件是否被打开
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static bool 文件是否正在被使用(string path)
+        public static bool 文件是否正在被使用(string fileName)
         {
-            if (!File.Exists(path))
+            bool inUse = true;
+            try
             {
-                return false;
+                FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read,
+                FileShare.None);
+                fs.Close();
+                inUse = false;
             }
-            IntPtr vHandle = _lopen(path, OF_READWRITE | OF_SHARE_DENY_NONE);//windows Api上面有定义扩展方法
-            if (vHandle == HFILE_ERROR)
+            catch
             {
-                return true;
+
             }
-            CloseHandle(vHandle);
-            return false;
+            return inUse;//true表示正在使用,false没有使用
         }
         //public static bool 文件是否正在被使用(string fileName)
         //{
@@ -1446,7 +1541,29 @@ namespace Auxiliary
             else
                 return b;
         }
-
+        ///获取当前系统的dpi数值
+        public static void SystemDpi(out int x, out int y)
+        {
+            using (Graphics g = Graphics.FromHwnd(IntPtr.Zero))
+            {
+                x = (int)g.DpiX;
+                y = (int)g.DpiY;
+                g.Dispose();
+            }
+        }
+        ///根据当前系统dpi数值匹配 当前系统的桌面缩放比例
+        public static double Scaling(int DpiIndex)
+        {
+            switch (DpiIndex)
+            {
+                case 96: return 1;
+                case 120: return 1.25;
+                case 144: return 1.5;
+                case 168: return 1.75;
+                case 192: return 2;
+            }
+            return 1;
+        }
         public class UA
         {
             [SuppressMessage("ReSharper", "InconsistentNaming")]

@@ -406,12 +406,12 @@ namespace Auxiliary
                 }
             }
             JObject JO = 获取多房间直播状态(UID);
+            ;
             foreach (var item in RoomList)
             {
                 try
                 {
                     int 状态 = (int)JO["data"][item.UID]["live_status"];
-                    
                     if (状态 == 0)
                     {
                         item.直播状态 = false;

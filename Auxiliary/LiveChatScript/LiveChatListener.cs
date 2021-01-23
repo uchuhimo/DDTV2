@@ -46,7 +46,7 @@ namespace Auxiliary.LiveChatScript
                 startIn = true;
                 ConnectAsync(roomId, null).Wait();
             }
-            catch (Exception)
+            catch (Exception E)
             {
             }
         }

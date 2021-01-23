@@ -24,6 +24,9 @@ using DDTV_New.Utility;
 using System.Diagnostics;
 using DDTV_New.window;
 using System.Configuration;
+using System.Drawing;
+using System.Windows.Interop;
+using Color = System.Windows.Media.Color;
 
 namespace DDTV_New
 {
@@ -642,19 +645,20 @@ namespace DDTV_New
             }, this);
 
         }
+
         private void 刷新房间列表UI(Action<Action> runOnLocalThread)
         {
-            if (!MMPU.已经提示wss连接错误 && MMPU.wss连接错误的次数 > 3)
-            {
-                MMPU.已经提示wss连接错误 = !MMPU.已经提示wss连接错误;
-                InfoLog.InfoPrintf($"网络状态不佳，多次尝试保持房间监控长连接失败，请关闭非VTBS数据来源房间监控，因为多次被阿B服务器拒绝连接，部分房间状态监控更新已停止", InfoLog.InfoClass.系统错误信息);
-                runOnLocalThread(() => {
-                    MMPU.弹窗.Add(30000,"网络连接失败/网络质量差", "网络状态不佳，多次尝试保持房间监控长连接失败，请关闭非VTBS数据来源房间监控，因为多次被阿B服务器拒绝连接，部分房间状态监控更新已停止。");
-                    全局提示.Content = $"多次尝试连接阿B服务器均失败，网络状态不佳，部分房间监控已停止。点击我去关闭非VTBS数据源房间监控";
-                    全局提示.Visibility = Visibility.Visible;
-                    全局提示.MouseDown += 全局提示_MouseDown;
-                });
-            }
+            //if (!MMPU.已经提示wss连接错误 && MMPU.wss连接错误的次数 > 3)
+            //{
+            //    MMPU.已经提示wss连接错误 = !MMPU.已经提示wss连接错误;
+            //    InfoLog.InfoPrintf($"网络状态不佳，多次尝试保持房间监控长连接失败，请关闭非VTBS数据来源房间监控，因为多次被阿B服务器拒绝连接，部分房间状态监控更新已停止", InfoLog.InfoClass.系统错误信息);
+            //    runOnLocalThread(() => {
+            //        MMPU.弹窗.Add(30000,"网络连接失败/网络质量差", "网络状态不佳，多次尝试保持房间监控长连接失败，请关闭非VTBS数据来源房间监控，因为多次被阿B服务器拒绝连接，部分房间状态监控更新已停止。");
+            //        全局提示.Content = $"多次尝试连接阿B服务器均失败，网络状态不佳，部分房间监控已停止。点击我去关闭非VTBS数据源房间监控";
+            //        全局提示.Visibility = Visibility.Visible;
+            //        全局提示.MouseDown += 全局提示_MouseDown;
+            //    });
+            //}
             List<RoomInfo> 正在直播 = new List<RoomInfo>();
             List<RoomInfo> 未直播 = new List<RoomInfo>();
             foreach (var item in bilibili.RoomList)
@@ -798,19 +802,8 @@ namespace DDTV_New
         }
         public static void DDTV关闭事件()
         {
-            NewThreadTask.Run(() =>
-            {
-                try
-                {
-                    FileInfo[] files = new DirectoryInfo("./tmp/LiveCache/").GetFiles();
-                    foreach (var item in files)
-                    {
-                        MMPU.文件删除委托("./tmp/LiveCache/" + item.Name,"DDTV关闭清空LiveCache缓存文件");
-                    }
-                }
-                catch (Exception) { }
-                Environment.Exit(0);
-            });
+            MMPU.清空播放缓存();
+            Environment.Exit(0);
         }
         NotifyIcon notifyIcon;
         private void 最小化按钮_Click(object sender, MouseButtonEventArgs e)
@@ -1132,14 +1125,6 @@ namespace DDTV_New
         }
         public void 打开直播列表(Downloader DL)
         {
-            //System.Diagnostics.Process p = new System.Diagnostics.Process();
-            //p.StartInfo.FileName = @"D:\Program Files (x86)\Pure Codec\x64\PotPlayerMini64.exe";//需要启动的程序名       
-            //p.StartInfo.Arguments = " \""+DL.DownIofo.下载地址+"\"";//启动参数       
-            //p.Start();//启动       
-
-            //return;
-
-
             if (DL != null)
             {
                 DL.DownIofo.播放状态 = true;
@@ -1149,6 +1134,7 @@ namespace DDTV_New
                     case 1:
                         {
                             PlayW.MainWindow PlayWindow = new PlayW.MainWindow(DL, MMPU.默认音量, 弹幕颜色, 字幕颜色, MMPU.默认弹幕大小, MMPU.默认字幕大小, MMPU.播放器默认宽度, MMPU.播放器默认高度);
+                            PlayWindow.播放窗口自动排序事件 += new PlayW.MainWindow.播放窗口自动排序委托(界面排序);
                             PlayWindow.Closed += 播放窗口退出事件;
                             PlayWindow.Show();
                             PlayWindow.BossKey += 老板键事件;
@@ -1164,11 +1150,6 @@ namespace DDTV_New
                             break;
                         }
                 }
-                // PlayW.MainWindow PlayWindow = new PlayW.MainWindow(DL, MMPU.默认音量, 弹幕颜色, 字幕颜色, MMPU.默认弹幕大小, MMPU.默认字幕大小, MMPU.PlayWindowW, MMPU.PlayWindowH);
-
-
-
-                // MMPU.ClearMemory();
             }
             else
             {
@@ -1176,7 +1157,116 @@ namespace DDTV_New
                 return;
             }
         }
+        public void 界面排序(string GUID)
+        {
+            Graphics currentGraphics = Graphics.FromHwnd(new WindowInteropHelper(this).Handle);
+            double dpixRatio = currentGraphics.DpiX / 96;
+            int 屏幕高度 = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Height/ dpixRatio);
+            int 屏幕宽度 = Convert.ToInt32(Screen.PrimaryScreen.Bounds.Width/ dpixRatio);
 
+            
+            if (playList1.Count==1)
+            {
+               if(playList1[0].窗口是否打开)
+                {
+                    playList1[0].设置全屏();
+                }
+            }
+            else if (playList1.Count>1&& playList1.Count<5)
+            {
+                List<int[]> 窗口坐标4 = new List<int[]>();
+                窗口坐标4.Add(new int[] { 0, 0 });
+                窗口坐标4.Add(new int[] { 屏幕宽度 / 2, 0 });
+                窗口坐标4.Add(new int[] { 0, 屏幕高度 / 2 });
+                窗口坐标4.Add(new int[] { 屏幕宽度 / 2, 屏幕高度 / 2 });
+                for (int i =0;i<4;i++)
+                {
+                    if(i>= playList1.Count)
+                    {
+                        break;
+                    }
+                    if (playList1[i].窗口是否打开)
+                    {
+                        playList1[i].设置窗口信息(new SetWindow.窗口信息() { 
+                        宽度= (屏幕宽度 / 2),
+                        高度= (屏幕高度 / 2),
+                        X坐标= 窗口坐标4[i][0],
+                        Y坐标= 窗口坐标4[i][1]
+                        });
+                       
+                    }
+                }
+            }
+            else if (playList1.Count > 4 && playList1.Count < 10)
+            {
+                List<int[]> 窗口坐标9 = new List<int[]>();
+                窗口坐标9.Add(new int[] { 0, 0 });
+                窗口坐标9.Add(new int[] { (屏幕宽度 / 3), 0 });
+                窗口坐标9.Add(new int[] { (屏幕宽度 / 3)+(屏幕宽度 / 3), 0 });
+                窗口坐标9.Add(new int[] { 0, (屏幕高度 / 3) });
+                窗口坐标9.Add(new int[] { (屏幕宽度 / 3), 屏幕高度 / 3 });
+                窗口坐标9.Add(new int[] { (屏幕宽度 / 3)+ (屏幕宽度 / 3), 屏幕高度 / 3 });
+                窗口坐标9.Add(new int[] { 0, (屏幕高度 / 3)+ (屏幕高度 / 3) });
+                窗口坐标9.Add(new int[] { (屏幕宽度 / 3), (屏幕高度 / 3) + (屏幕高度 / 3) });
+                窗口坐标9.Add(new int[] { (屏幕宽度 / 3) + (屏幕宽度 / 3), (屏幕高度 / 3)+ (屏幕高度 / 3) });
+                for (int i = 0; i < 9; i++)
+                {
+                    if (i >= playList1.Count)
+                    {
+                        break;
+                    }
+                    if (playList1[i].窗口是否打开)
+                    {
+                        playList1[i].设置窗口信息(new SetWindow.窗口信息()
+                        {
+                            宽度 = (屏幕宽度 / 3),
+                            高度 = (屏幕高度 / 3),
+                            X坐标 = 窗口坐标9[i][0],
+                            Y坐标 = 窗口坐标9[i][1]
+                        });
+
+                    }
+                }
+            }
+            else if (playList1.Count > 9)
+            {
+                List<int[]> 窗口坐标16 = new List<int[]>();
+                窗口坐标16.Add(new int[] { 0, 0 });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4), 0 });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4), 0 });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4) + (屏幕宽度 / 4), 0 });
+                窗口坐标16.Add(new int[] { 0, (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4), 屏幕高度 / 4 });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4), 屏幕高度 / 4 });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4)+ (屏幕宽度 / 4), 屏幕高度 / 4 });
+                窗口坐标16.Add(new int[] { 0, (屏幕高度 / 4) + (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4), (屏幕高度 / 4) + (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4), (屏幕高度 / 4) + (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4) + (屏幕宽度 / 4), (屏幕高度 / 4) + (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { 0, (屏幕高度 / 4) + (屏幕高度 / 4) + (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4), (屏幕高度 / 4) + (屏幕高度 / 4) + (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4), (屏幕高度 / 4) + (屏幕高度 / 4) + (屏幕高度 / 4) });
+                窗口坐标16.Add(new int[] { (屏幕宽度 / 4) + (屏幕宽度 / 4) + (屏幕宽度 / 4), (屏幕高度 / 4) + (屏幕高度 / 4) + (屏幕高度 / 4) });
+                for (int i = 0; i < 16; i++)
+                {
+                    if (i >= playList1.Count)
+                    {
+                        break;
+                    }
+                    if (playList1[i].窗口是否打开)
+                    {
+                        playList1[i].设置窗口信息(new SetWindow.窗口信息()
+                        {
+                            宽度 = (屏幕宽度 / 4),
+                            高度 = (屏幕高度 / 4),
+                            X坐标 = 窗口坐标16[i][0],
+                            Y坐标 = 窗口坐标16[i][1]
+                        });
+
+                    }
+                }
+            }
+        }
         private void 老板键事件(object sender, EventArgs e)
         {
             this.WindowState = WindowState.Minimized;
@@ -1202,21 +1292,28 @@ namespace DDTV_New
                             {
                                 PlayW.MainWindow p = (PlayW.MainWindow)sender;
                                 playList1.Remove(p);
-                                foreach (var item in MMPU.DownList)
+                                try
                                 {
-                                    if (item.DownIofo.事件GUID == p.DD.DownIofo.事件GUID)
-                                    {
-                                        item.DownIofo.WC.CancelAsync();
-                                        item.DownIofo.下载状态 = false;
-                                        item.DownIofo.备注 = "播放窗口关闭，停止下载";
-                                        item.DownIofo.结束时间 = Convert.ToInt32((DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalSeconds);
-                                        if (!item.DownIofo.是否保存)
-                                        {
-                                            MMPU.文件删除委托(p.DD.DownIofo.文件保存路径,"关闭播放窗口，删除LiveCache缓存文件");
-                                        }
-                                        break;
-                                    }
+                                    p.DD.DownIofo.WC.DownloadProgressChanged += 下载窗口已经关闭时回收下载对象;
+                                    p.DD.DownIofo.WC.CancelAsync();
+                                    p.DD.DownIofo.下载状态 = false;
+                                    p.DD.DownIofo.备注 = "播放窗口关闭，停止下载";
+                                    p.DD.DownIofo.结束时间 = Convert.ToInt32((DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalSeconds);
                                 }
+                                catch (Exception) { }
+                                if (!p.DD.DownIofo.是否保存)
+                                {
+                                    MMPU.文件删除委托(p.DD.DownIofo.文件保存路径, "关闭播放窗口，删除LiveCache缓存文件");
+                                }
+                                //foreach (var item in MMPU.DownList)
+                                //{
+                                //    if (item.DownIofo.事件GUID == p.DD.DownIofo.事件GUID)
+                                //    {
+                                       
+                                       
+                                //        break;
+                                //    }
+                                //}
                                 break;
                             }
                         case 2:
@@ -1250,6 +1347,12 @@ namespace DDTV_New
                     InfoLog.InfoPrintf("关闭播放窗口出现错误:"+e.ToString(), InfoLog.InfoClass.Debug);
                 }
             });
+        }
+
+        private void 下载窗口已经关闭时回收下载对象(object sender, DownloadProgressChangedEventArgs e)
+        {
+            WebClient WC = (WebClient)sender;
+            WC.CancelAsync();
         }
 
         private void 直播列表删除按钮点击事件(object sender, RoutedEventArgs e)
@@ -2083,5 +2186,6 @@ namespace DDTV_New
         {
             MessageBox.Show("修改房间配置文件请使用DDTV文件夹里的【DDTVRoomConfig.exe】房间配置修改工具进行修改\r或者直接修改[RoomListConfig.json]文件\r修改前请关闭DDTV本体");
         }
+        
     }
 }
