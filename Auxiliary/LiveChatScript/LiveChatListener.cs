@@ -64,11 +64,12 @@ namespace Auxiliary.LiveChatScript
                 m_client.Options.Proxy = new WebProxy(proxy);
             }
             m_innerRts = new CancellationTokenSource();
-            string BB = MMPU.返回网页内容_GET("https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=" + roomId, 20000);
-            JObject JO = (JObject)JsonConvert.DeserializeObject(BB);
+            JObject JO = new JObject();
             try
             {
                 var sortedHosts = new SortedDictionary<int, string>();
+                string BB = MMPU.返回网页内容_GET("https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=" + roomId, 20000);
+                JO = (JObject)JsonConvert.DeserializeObject(BB);
                 foreach (var item in JO["data"]["host_list"])
                 {
                     var host = item["host"].ToString();
@@ -92,7 +93,6 @@ namespace Auxiliary.LiveChatScript
                     bilibili.已经使用的服务器组[wss_S] += 1;
                 }
                 await m_client.ConnectAsync(new Uri("wss://" + wss_S + "/sub"), cancellationToken ?? new CancellationTokenSource(30000).Token);
-                InfoLog.InfoPrintf($@"使用WSS连接host: {wss_S}, 已连接数: {bilibili.已经使用的服务器组[wss_S]}", InfoLog.InfoClass.杂项提示);
 
                 //await m_client.ConnectAsync(new Uri("wss://broadcastlv.chat.bilibili.com/sub"), cancellationToken ?? new CancellationTokenSource(300000).Token);
             }

@@ -36,9 +36,9 @@ namespace Auxiliary
         public static string 直播缓存目录 = "";
         public static int 直播更新时间 = 20;
         public static string 下载储存目录 = "";
-        public static string 版本号 = "2.0.5.0d";
+        public static string 版本号 = "2.0.5.1a";
         public static string 开发版本号 = $"开发模式(基于Ver{版本号}主分支)";     
-        public static string[] 不检测的版本号 = { };
+        public static string[] 不检测的版本号 = { "2.0.5.0d" };
         public static bool 第一次打开播放窗口 = true;
         public static int 默认音量 = 0;
         public static int 缩小功能 = 1;
@@ -79,6 +79,8 @@ namespace Auxiliary
         public static string 更新公告 = "";
         public static string webServer默认监听IP = "0.0.0.0";
         public static string webServer默认监听端口 = "11419";
+        public static string webServer_pfx证书名称 = "";
+        public static string webServer_pfx证书密码 = "";
         public static string 缓存路径 = "./tmp/";
         public static int 弹幕录制种类 = 2;
         public static int wss连接错误的次数 = 0;
@@ -90,6 +92,7 @@ namespace Auxiliary
         public static int 心跳打印间隔 = 180;
         public static string webadmin验证字符串 = "";
         public static string webghost验证字符串 = "";
+        public static bool 是否启用SSL = false;
 
         public static int 启动模式 = 0;//0：DDTV,1：DDTVLive,2：DDTV服务器
         public static bool 网络环境变动监听 = false;
@@ -136,7 +139,7 @@ namespace Auxiliary
             InfoLog.InfoPrintf($"配置文件初始化任务[Debug模式]:{Debug模式}", InfoLog.InfoClass.Debug);
             InfoLog.InfoPrintf($"配置文件初始化任务[Debug输出到文件]:{Debug输出到文件}", InfoLog.InfoClass.Debug);
             InfoLog.InfoPrintf($"配置文件初始化任务[Debug打印到终端]:{Debug打印到终端}", InfoLog.InfoClass.Debug);
-            心跳打印间隔 = int.Parse(读取exe默认配置文件("DokiDoki", "180"));
+            心跳打印间隔 = int.Parse(读取exe默认配置文件("DokiDoki", "300"));
             InfoLog.InfoPrintf($"配置文件初始化任务[心跳打印间隔]:{心跳打印间隔}", InfoLog.InfoClass.Debug);
             网络环境变动监听 = 读取exe默认配置文件("NetStatusMonitor", "0") == "0" ? false : true;
             InfoLog.InfoPrintf($"配置文件初始化任务[网络环境变动监听]:{网络环境变动监听}", InfoLog.InfoClass.Debug);
@@ -196,6 +199,21 @@ namespace Auxiliary
                 MMPU.webadmin验证字符串 = MMPU.读取exe默认配置文件("WebAuthenticationAadminPassword", "admin");
                 MMPU.webghost验证字符串 = MMPU.读取exe默认配置文件("WebAuthenticationGhostPasswrod", "ghost");
                 MMPU.webghost验证字符串 = MMPU.读取exe默认配置文件("WebAuthenticationCode", "DDTVLiveRec");
+                MMPU.webServer_pfx证书名称 = MMPU.读取exe默认配置文件("sslName", "");
+                MMPU.webServer_pfx证书密码 = MMPU.读取exe默认配置文件("sslPssword", "");
+                if (!string.IsNullOrEmpty(webServer_pfx证书名称) && !string.IsNullOrEmpty(webServer_pfx证书密码))
+                {
+                    是否启用SSL = true;
+                    InfoLog.InfoPrintf($"配置文件初始化任务[SSL证书初始化]:{webServer_pfx证书名称}", InfoLog.InfoClass.Debug);
+                    InfoLog.InfoPrintf($"======检测到SSL证书=======\r\n\r\n请使用[https://本设备IP或域名:" + webServer默认监听端口+ "]进行访问\r\n\r\n======检测到SSL连接=======", InfoLog.InfoClass.下载必要提示);
+                }
+                else
+                {
+                    是否启用SSL = false;
+                    InfoLog.InfoPrintf($"配置文件初始化任务[SSL证书初始化]:证书不存在！或密码不存在，SSL证书加载失败", InfoLog.InfoClass.Debug);
+                    InfoLog.InfoPrintf($"======未检测到SSL证书=======\r\n\r\n请使用[http://本设备IP或域名:" + webServer默认监听端口 + "]进行访问\r\n\r\n======未检测到SSL连接=======", InfoLog.InfoClass.下载必要提示);
+                }
+                
             }
             //数据源
             MMPU.数据源 = int.Parse(MMPU.读取exe默认配置文件("DataSource", "0"));
@@ -399,7 +417,7 @@ namespace Auxiliary
                         InfoLog.InfoPrintf($"[DDTVLR心跳信息]临时API监控房间数:{RoomList.Count - 已连接的直播间状态.Count},WSS长连接数:{已连接的直播间状态.Count},{下载中}个下载中", InfoLog.InfoClass.下载必要提示);
                     }
                     catch (Exception){}
-                    Thread.Sleep(60*1000);
+                    Thread.Sleep(心跳打印间隔 * 1000);
                 }
             }).Start();
         }
@@ -549,7 +567,16 @@ namespace Auxiliary
             }
             catch (Exception)
             {
-                setFiles(name, V);
+                if (string.IsNullOrEmpty(V))
+                {
+                    setFiles(name, "1");
+                    setFiles(name, "");
+                }
+                else;
+                {
+                    setFiles(name,V);
+                }
+                
             }
             return A1;
         }

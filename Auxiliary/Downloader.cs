@@ -496,6 +496,7 @@ namespace Auxiliary
                         if (bilibili.根据房间号获取房间信息.是否正在直播(DownIofo.房间_频道号,true) && DownIofo.是否保存)
                         {
                             DownIofo.网络超时 = true;
+                            DownIofo.下载状态 = false;
                             DownIofo.备注 = "下载流中断，检测到房间仍为开播状态，新建续下任务。";
                             switch (DownIofo.平台)
                             {
