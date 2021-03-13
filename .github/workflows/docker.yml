@@ -32,4 +32,4 @@ jobs:
           file: DDTVLiveRec/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ubuntu/ddtv_live_rec:latest
+          tags: uchuhimo/ddtv_live_rec:latest
